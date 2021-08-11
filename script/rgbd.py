@@ -146,7 +146,6 @@ class LiftEnv(SapienEnv):
         # print(reward)
 
         if done:
-            print(done)
             reward += 100.0
         # print(reward)
         reward -= 0.5
