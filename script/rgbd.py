@@ -11,7 +11,7 @@ import cv2
 
 from PIL import Image, ImageColor
 
-from stable_baselines3 import PPO
+from stable_baselines3 import PPO, SAC
 from stable_baselines3.common.env_checker import check_env
 
 cube_pos = 0
@@ -29,7 +29,9 @@ class LiftEnv(SapienEnv):
         self.active_joints = self.robot.get_active_joints()
         self.dishwasher = self.get_articulation('dishwasher')
         self.cam = self.get_actor('cam')
-        self.img = np.zeros([480,640,4])
+        #self.img = np.zeros([480,640,4])
+        self.img = np.zeros([120,160,3])
+
         # self.cube = self.get_actor('cube')
 
         for joint in self.active_joints[:5]:
@@ -37,9 +39,13 @@ class LiftEnv(SapienEnv):
         for joint in self.active_joints[5:7]:
             joint.set_drive_property(stiffness=0, damping=0.72)
 
-        self.observation_space = spaces.Box(low=0, high=255, shape=(480,640,4), dtype=np.uint8)
+        #self.observation_space = spaces.Box(low=0, high=255, shape=(480,640,4), dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=255, shape=(120,160,3), dtype=np.uint8)
         self.action_space = spaces.Box(
             low=-1.0, high=1.0, shape=[self.dof], dtype=np.float32)
+
+        self.max_episode_length = 100
+        self.curr_step = 0
 
     # ---------------------------------------------------------------------------- #
     # Simulation world
@@ -113,20 +119,23 @@ class LiftEnv(SapienEnv):
         rgba = self.camera.get_float_texture('Color')  # [H, W, 4]
         rgba_img = (rgba * 255).clip(0, 255).astype("uint8")
         rgba_pil = Image.fromarray(rgba_img)
-        rgba_pil.show()
+        #rgba_pil.show()
+        rgba_pil = rgba_pil.resize((160, 120))
+
         rgb_img = rgba_pil.convert('RGB')
         rgb_img = np.array(rgb_img)
-        
-        #Depth
-        position = self.camera.get_float_texture('Position')
-        depth = -position[..., 2]
-        depth_image = (depth * 1000.0).astype(np.uint8)
-        depth_pil = Image.fromarray(depth_image)
-        # # depth_pil.show()
-        img = np.dstack([rgb_img,depth_image])
-        # print(img.shape)
 
-        self.img = img
+        #Depth
+#        position = self.camera.get_float_texture('Position')
+#        depth = -position[..., 2]
+#        depth_image = (depth * 1000.0).astype(np.uint8)
+#        depth_pil = Image.fromarray(depth_image)
+#        # # depth_pil.show()
+#        img = np.dstack([rgb_img,depth_image])
+#        # print(img.shape)
+
+        self.img = rgb_img
+        
         
         obs = self._get_obs()
         reward = self._get_reward()
@@ -141,14 +150,21 @@ class LiftEnv(SapienEnv):
             reward += 100.0
         # print(reward)
         reward -= 0.5
+
+        # Terminate when max episode length is reached
+        self.curr_step += 1
+        if self.curr_step > self.max_episode_length:
+            done = True
+
         return obs, reward, done, {}
 
     def reset(self):
-        print("reset:/")
+#        print("reset:/")
         global cube_pos
         self.robot.set_qpos(self.init_qpos)
         self.dishwasher.set_qpos([0])
         self._scene.step()
+        self.curr_step = 0
         return self._get_obs()
 
     def _get_obs(self):
@@ -200,25 +216,28 @@ class LiftEnv(SapienEnv):
 
 
 def main():
+
     env = LiftEnv()
     env.reset()
 
+
     # print(check_env(env))
-    model = PPO("CnnPolicy", env, verbose=1, tensorboard_log="./PPO_Open/", n_steps=2*1024)
+#    model = PPO("CnnPolicy", env, verbose=1, tensorboard_log="./PPO_Open/", n_steps=2*1024)
+    model = SAC("CnnPolicy", env, verbose=1, buffer_size=100000)
     # model = PPO.load("RGBD_PPO")
     # model.set_env(env)
-    model.learn(total_timesteps=10000)
-    model.save("RGBD_PPO")
+    model.learn(total_timesteps=10000, log_interval=4)
+#    model.save("RGBD_PPO")
 
     # model = PPO.load("Lift_PPO2l")
     # # model.set_env(env)
-    dones = False
-    obs = env.reset()
-    while not dones:
-        action, _states = model.predict(obs)
-        # action = env.action_space.sample()
-        obs, rewards, dones, info = env.step(action)
-        env.render()
+#    dones = False
+#    obs = env.reset()
+#    while not dones:
+#        action, _states = model.predict(obs)
+#        # action = env.action_space.sample()
+#        obs, rewards, dones, info = env.step(action)
+#        env.render()
 
 
 
