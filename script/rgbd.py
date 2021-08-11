@@ -140,8 +140,8 @@ class LiftEnv(SapienEnv):
         obs = self._get_obs()
         reward = self._get_reward()
 
-        done = self.dishwasher.get_qpos() > 0.5
         done = False
+        done = self.dishwasher.get_qpos() > 0.8
         done = bool(done)
         # print(reward)
 
@@ -195,7 +195,7 @@ class LiftEnv(SapienEnv):
 
         opening_reward = 10.0* np.sin(self.dishwasher.get_qpos())
 
-        return float( -0.05 + opening_reward)
+        return float( opening_reward)
 
     # ---------------------------------------------------------------------------- #
     # Visualization
