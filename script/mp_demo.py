@@ -4,7 +4,7 @@ import numpy as np
 from sapien.utils.viewer import Viewer
 from sapien.core import Pose
 import trimesh
-
+import time
 
 class PlanningDemo():
     def __init__(self):
@@ -36,10 +36,10 @@ class PlanningDemo():
         loader: sapien.URDFLoader = self.scene.create_urdf_loader()
         loader.fix_root_link = True
         self.robot: sapien.Articulation = loader.load("../assets/robot/panda/panda.urdf")
-        self.robot.set_root_pose(sapien.Pose([0, 0, 0], [1, 0, 0, 0]))
+        self.robot.set_root_pose(sapien.Pose([0, 0, 0.2], [1, 0, 0, 0]))
 
         # Set initial joint positions
-        init_qpos =  [0, -0.4019634954084936207, 0.0, -2.317993877991494,0.0, 2.941592653589793, 0.6853981633974483, 0, 0]
+        init_qpos =  [0, -0.8019634954084936207, 0.0, -2.317993877991494,0.0, 2.941592653589793, 0.6853981633974483, 0, 0]
         self.robot.set_qpos(init_qpos)
 
         self.active_joints = self.robot.get_active_joints()
@@ -50,10 +50,10 @@ class PlanningDemo():
         loader = self.scene.create_urdf_loader()
         loader.fix_root_link = True
         
-        dishwasher = loader.load('../assets/12536/mobility.urdf') 
+        dishwasher = loader.load('../assets/46859/mobility.urdf') 
         dishwasher.set_name('dishwasher')
-        dishwasher.set_root_pose(Pose([0.8, 0, 0.4]))
-        dishwasher.set_qpos([1])
+        dishwasher.set_root_pose(Pose([0.9, 0, 0.0]))
+        dishwasher.set_qpos([0,0])
         self.dishwasher = dishwasher
 
         # table top
@@ -68,7 +68,7 @@ class PlanningDemo():
         builder.add_box_collision(half_size=[0.02, 0.02, 0.06])
         builder.add_box_visual(half_size=[0.02, 0.02, 0.06], color=[1, 0, 0])
         self.red_cube = builder.build(name='red_cube')
-        self.red_cube.set_pose(sapien.Pose([0.8, 0, 0.3]))
+        self.red_cube.set_pose(sapien.Pose([0.4, 0, 0.55]))
 
         # builder = self.scene.create_actor_builder()
         # builder.add_box_collision(half_size=[0.02, 0.02, 0.04])
@@ -166,11 +166,12 @@ class PlanningDemo():
             return self.move_to_pose_with_screw(pose)
         else:
             return self.move_to_pose_with_RRTConnect(pose)
-
+    
     def demo(self, with_screw = False):
-        self.dishwasher.set_qpos([0])
+        self.dishwasher.set_qpos([0,0.3])
+        
         self.add_point_cloud()
-        poses = [[0.7, 0.0, 0.2, 0, 1, 0, 0],
+        poses = [[0.4, 0.0, 0.45, 0, 1, 0, 0],
                 [0.2, -0.3, 0.08, 0, 1, 0, 0],
                 [0.6, 0.1, 0.14, 0, 1, 0, 0]]
         for i in range(1):
@@ -181,11 +182,11 @@ class PlanningDemo():
             pose[2] -= 0.12
             self.move_to_pose(pose, with_screw)
             self.close_gripper()
-            pose[2] += 0.12
+            pose[2] += 0.2
             self.move_to_pose(pose, with_screw)
-            pose[0] += 0.1
+            pose[0] += 0.15
             self.move_to_pose(pose, with_screw)
-            pose[2] -= 0.12
+            pose[2] -= 0.0
             self.move_to_pose(pose, with_screw)
             self.open_gripper()
             pose[2] += 0.12
